@@ -1,0 +1,272 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil pengguna utama aplikasi KasVault dan preferensi dasar.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "ID unik pengguna Firebase Auth",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nama tampilan pengguna",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "currency": {
+          "type": "string",
+          "description": "Kode mata uang utama",
+          "enum": ["IDR"],
+          "maxLength": 10
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembuatan profil"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembaruan profil"
+        }
+      },
+      "required": ["uid", "displayName", "currency", "createdAt", "updatedAt"]
+    },
+    "EmergencyConfig": {
+      "title": "EmergencyConfig",
+      "description": "Konfigurasi target dan aturan menabung otomatis dana darurat bulanan.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "ID unik pemilik konfigurasi",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "Target nominal dana darurat dalam Rupiah"
+        },
+        "currentBalance": {
+          "type": "number",
+          "description": "Saldo dana darurat terkumpul saat ini"
+        },
+        "monthlyExpenseBaseline": {
+          "type": "number",
+          "description": "Basis pengeluaran bulanan untuk menghitung ketahanan bulan"
+        },
+        "autoSaveEnabled": {
+          "type": "boolean",
+          "description": "Status aktif aturan alokasi otomatis bulanan"
+        },
+        "monthlyRuleType": {
+          "type": "string",
+          "description": "Jenis aturan alokasi bulanan",
+          "enum": ["fixed", "percentage"],
+          "maxLength": 20
+        },
+        "monthlyRuleValue": {
+          "type": "number",
+          "description": "Nominal tetap (IDR) atau persentase pemasukan bulanan"
+        },
+        "scheduledDay": {
+          "type": "number",
+          "description": "Tanggal eksekusi otomatis bulanan (1-28)"
+        },
+        "roundUpEnabled": {
+          "type": "boolean",
+          "description": "Status aktif pembulatan otomatis transaksi pengeluaran"
+        },
+        "roundUpStep": {
+          "type": "number",
+          "description": "Kelipatan pembulatan pengeluaran dalam IDR"
+        },
+        "lastExecutedMonth": {
+          "type": "string",
+          "description": "Bulan terakhir alokasi otomatis bulanan dieksekusi (YYYY-MM atau kosong)",
+          "maxLength": 7,
+          "pattern": "^$|^[0-9]{4}-[0-9]{2}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "targetAmount",
+        "currentBalance",
+        "monthlyExpenseBaseline",
+        "autoSaveEnabled",
+        "monthlyRuleType",
+        "monthlyRuleValue",
+        "scheduledDay",
+        "roundUpEnabled",
+        "roundUpStep",
+        "lastExecutedMonth",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Catatan pemasukan atau pengeluaran keuangan pribadi.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Judul atau deskripsi transaksi",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "amount": {
+          "type": "number",
+          "description": "Nominal transaksi dalam IDR"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "maxLength": 20
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "date": {
+          "type": "string",
+          "description": "Tanggal transaksi format YYYY-MM-DD",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "monthKey": {
+          "type": "string",
+          "description": "Kunci bulan format YYYY-MM",
+          "minLength": 7,
+          "maxLength": 7,
+          "pattern": "^[0-9]{4}-[0-9]{2}$"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "roundUpSaved": {
+          "type": "number",
+          "description": "Nominal pembulatan yang otomatis masuk ke dana darurat"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "title",
+        "amount",
+        "type",
+        "category",
+        "date",
+        "monthKey",
+        "note",
+        "roundUpSaved",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "EmergencyLog": {
+      "title": "EmergencyLog",
+      "description": "Riwayat mutasi setoran otomatis, manual, maupun penarikan dana darurat.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Nominal mutasi positif dalam IDR"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["deposit", "withdraw"],
+          "maxLength": 20
+        },
+        "source": {
+          "type": "string",
+          "enum": ["monthly_auto", "round_up", "manual_deposit", "emergency_withdraw"],
+          "maxLength": 30
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "monthKey": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 7,
+          "pattern": "^[0-9]{4}-[0-9]{2}$"
+        },
+        "transactionId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "amount",
+        "direction",
+        "source",
+        "note",
+        "monthKey",
+        "transactionId",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Dokumen profil root milik pengguna terautentikasi"
+    },
+    "/users/{userId}/emergencyConfig/{configId}": {
+      "schema": { "$ref": "#/entities/EmergencyConfig" },
+      "description": "Konfigurasi target dan aturan auto-save dana darurat pengguna"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Daftar transaksi pemasukan dan pengeluaran milik pengguna"
+    },
+    "/users/{userId}/emergencyLogs/{logId}": {
+      "schema": { "$ref": "#/entities/EmergencyLog" },
+      "description": "Log riwayat mutasi dana darurat (auto-save bulanan, round-up, manual)"
+    }
+  }
+}

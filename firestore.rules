@@ -1,0 +1,318 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isEmailVerified() && request.auth.uid == userId;
+    }
+
+    function parentUserExistsAfter(userId) {
+      return existsAfter(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'currency', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'currency', 'createdAt', 'updatedAt'])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 100
+        && data.currency is string
+        && data.currency == 'IDR'
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidEmergencyConfig(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'targetAmount',
+          'currentBalance',
+          'monthlyExpenseBaseline',
+          'autoSaveEnabled',
+          'monthlyRuleType',
+          'monthlyRuleValue',
+          'scheduledDay',
+          'roundUpEnabled',
+          'roundUpStep',
+          'lastExecutedMonth',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'targetAmount',
+          'currentBalance',
+          'monthlyExpenseBaseline',
+          'autoSaveEnabled',
+          'monthlyRuleType',
+          'monthlyRuleValue',
+          'scheduledDay',
+          'roundUpEnabled',
+          'roundUpStep',
+          'lastExecutedMonth',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && (data.targetAmount is int || data.targetAmount is float)
+        && data.targetAmount >= 0
+        && data.targetAmount <= 100000000000
+        && (data.currentBalance is int || data.currentBalance is float)
+        && data.currentBalance >= 0
+        && data.currentBalance <= 100000000000
+        && (data.monthlyExpenseBaseline is int || data.monthlyExpenseBaseline is float)
+        && data.monthlyExpenseBaseline >= 0
+        && data.monthlyExpenseBaseline <= 100000000000
+        && data.autoSaveEnabled is bool
+        && data.monthlyRuleType is string
+        && data.monthlyRuleType in ['fixed', 'percentage']
+        && (data.monthlyRuleValue is int || data.monthlyRuleValue is float)
+        && data.monthlyRuleValue >= 0
+        && data.monthlyRuleValue <= 10000000000
+        && (data.monthlyRuleType == 'fixed' || (data.monthlyRuleValue >= 1 && data.monthlyRuleValue <= 80))
+        && (data.scheduledDay is int || data.scheduledDay is float)
+        && data.scheduledDay >= 1
+        && data.scheduledDay <= 28
+        && data.roundUpEnabled is bool
+        && data.roundUpStep in [10000, 50000, 100000]
+        && data.lastExecutedMonth is string
+        && data.lastExecutedMonth.size() <= 7
+        && data.lastExecutedMonth.matches('^$|^[0-9]{4}-[0-9]{2}$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'title',
+          'amount',
+          'type',
+          'category',
+          'date',
+          'monthKey',
+          'note',
+          'roundUpSaved',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'title',
+          'amount',
+          'type',
+          'category',
+          'date',
+          'monthKey',
+          'note',
+          'roundUpSaved',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 120
+        && (data.amount is int || data.amount is float)
+        && data.amount > 0
+        && data.amount <= 100000000000
+        && data.type is string
+        && data.type in ['income', 'expense']
+        && data.category is string
+        && data.category.size() >= 1
+        && data.category.size() <= 50
+        && data.date is string
+        && data.date.size() == 10
+        && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.monthKey is string
+        && data.monthKey.size() == 7
+        && data.monthKey.matches('^[0-9]{4}-[0-9]{2}$')
+        && data.note is string
+        && data.note.size() <= 240
+        && (data.roundUpSaved is int || data.roundUpSaved is float)
+        && data.roundUpSaved >= 0
+        && data.roundUpSaved <= 1000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidEmergencyLog(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'amount',
+          'direction',
+          'source',
+          'note',
+          'monthKey',
+          'transactionId',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'amount',
+          'direction',
+          'source',
+          'note',
+          'monthKey',
+          'transactionId',
+          'createdAt'
+        ])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && (data.amount is int || data.amount is float)
+        && data.amount > 0
+        && data.amount <= 100000000000
+        && data.direction is string
+        && data.direction in ['deposit', 'withdraw']
+        && data.source is string
+        && data.source in ['monthly_auto', 'round_up', 'manual_deposit', 'emergency_withdraw']
+        && data.note is string
+        && data.note.size() >= 1
+        && data.note.size() <= 200
+        && data.monthKey is string
+        && data.monthKey.size() == 7
+        && data.monthKey.matches('^[0-9]{4}-[0-9]{2}$')
+        && data.transactionId is string
+        && data.transactionId.size() <= 128
+        && data.transactionId.matches('^$|^[a-zA-Z0-9_\\-]+$')
+        && data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      allow delete: if isVerifiedOwner(userId) && isValidId(userId);
+
+      match /emergencyConfig/{configId} {
+        allow get: if isOwner(userId) && isValidId(configId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(configId)
+          && configId == 'default'
+          && isValidEmergencyConfig(incoming(), userId)
+          && parentUserExistsAfter(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(configId)
+          && configId == 'default'
+          && isValidEmergencyConfig(incoming(), userId)
+          && incoming().uid == existing().uid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'targetAmount',
+              'monthlyExpenseBaseline',
+              'autoSaveEnabled',
+              'monthlyRuleType',
+              'monthlyRuleValue',
+              'scheduledDay',
+              'roundUpEnabled',
+              'roundUpStep',
+              'updatedAt'
+            ])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['currentBalance', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['currentBalance', 'lastExecutedMonth', 'updatedAt'])
+          );
+        allow delete: if isVerifiedOwner(userId) && isValidId(configId);
+      }
+
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(transactionId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(transactionId)
+          && isValidTransaction(incoming(), userId)
+          && parentUserExistsAfter(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(transactionId)
+          && isValidTransaction(incoming(), userId)
+          && incoming().uid == existing().uid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title',
+            'amount',
+            'type',
+            'category',
+            'date',
+            'monthKey',
+            'note',
+            'roundUpSaved',
+            'updatedAt'
+          ]);
+        allow delete: if isVerifiedOwner(userId) && isValidId(transactionId);
+      }
+
+      match /emergencyLogs/{logId} {
+        allow get: if isOwner(userId) && isValidId(logId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(logId)
+          && isValidEmergencyLog(incoming(), userId)
+          && parentUserExistsAfter(userId)
+          && incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if isVerifiedOwner(userId) && isValidId(logId);
+      }
+    }
+  }
+}

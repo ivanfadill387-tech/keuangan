@@ -1,0 +1,6 @@
+{
+  "name": "KasVault",
+  "description": "Manajemen keuangan pribadi dengan pelaporan grafik bulanan dan tabungan dana darurat otomatis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

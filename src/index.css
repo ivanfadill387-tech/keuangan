@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-obsidian: #090C0B;
+  --color-obsidian-nav: #0F1412;
+  --color-obsidian-surface: #151B18;
+  --color-obsidian-hover: #1C2420;
+  --color-emerald-accent: #10B981;
+  --color-emerald-hover: #059669;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #090C0B;
+    color: #F3F6F4;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle obsidian scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090C0B;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.45);
+}
